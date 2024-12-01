@@ -65,7 +65,7 @@ class Module:
             params.append((name, param))
         for prefix, submodule in self._modules.items():
             for name, param in submodule.named_parameters():
-                params.append((prefix + "." + name, param))
+                params.append(param)
 
         return params
 
