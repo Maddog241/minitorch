@@ -92,25 +92,25 @@ class Scalar:
         return Mul.apply(b, Inv.apply(self))
 
     def __add__(self, b: ScalarLike) -> Scalar:
-        return Add.apply(self.data, b)
+        return Add.apply(self, b)
 
     def __bool__(self) -> bool:
-        return bool(self.data)
+        return bool(self)
 
     def __lt__(self, b: ScalarLike) -> Scalar:
-        return LT.apply(self.data, b)
+        return LT.apply(self, b)
 
     def __gt__(self, b: ScalarLike) -> Scalar:
-        return LT.apply(b, self.data)
+        return LT.apply(b, self)
 
     def __eq__(self, b: ScalarLike) -> Scalar:  # type: ignore[override]
-        return EQ.apply(self.data, b)
+        return EQ.apply(self, b)
 
     def __sub__(self, b: ScalarLike) -> Scalar:
-        return Add.apply(self.data, Neg.apply(b))
+        return Add.apply(self, Neg.apply(b))
 
     def __neg__(self) -> Scalar:
-        return Neg.apply(self.data)
+        return Neg.apply(self)
 
     def __radd__(self, b: ScalarLike) -> Scalar:
         return self + b
@@ -119,16 +119,16 @@ class Scalar:
         return self * b
 
     def log(self) -> Scalar:
-        return Log.apply(self.data)
+        return Log.apply(self)
 
     def exp(self) -> Scalar:
-        return Exp.apply(self.data)
+        return Exp.apply(self)
 
     def sigmoid(self) -> Scalar:
-        return Sigmoid.apply(self.data)
+        return Sigmoid.apply(self)
 
     def relu(self) -> Scalar:
-        return ReLU.apply(self.data)
+        return ReLU.apply(self)
 
     # Variable elements for backprop
 
