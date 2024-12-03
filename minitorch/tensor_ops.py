@@ -14,6 +14,8 @@ from .tensor_data import (
     to_index,
 )
 
+from .operators import reduce
+
 if TYPE_CHECKING:
     from .tensor import Tensor
     from .tensor_data import Index, Shape, Storage, Strides
@@ -264,8 +266,12 @@ def tensor_map(
         in_shape: Shape,
         in_strides: Strides,
     ) -> None:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError('Need to implement for Task 2.3')
+        # simple version
+        for ordinal in range(len(in_storage)):
+            in_index = np.array([0]*len(in_shape))
+            to_index(ordinal, in_shape, in_index)
+            in_ordinal = index_to_position(in_index, in_strides)
+            out[ordinal] = fn(in_storage[in_ordinal])
 
     return _map
 
@@ -309,8 +315,28 @@ def tensor_zip(
         b_shape: Shape,
         b_strides: Strides,
     ) -> None:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError('Need to implement for Task 2.3')
+        all_coords = get_indices(out_shape, -1)
+        for coord in all_coords:
+            a_index, b_index = np.zeros(a_shape.shape, dtype=np.int32), np.zeros(b_shape.shape, dtype=np.int32)
+            broadcast_index(coord, out_shape, a_shape, a_index)
+            broadcast_index(coord, out_shape, b_shape, b_index)
+
+            a_pos = index_to_position(a_index, a_strides)
+            b_pos = index_to_position(b_index, b_strides)
+            ordinal = index_to_position(coord, out_strides)
+
+            out[ordinal] = fn(a_storage[a_pos], b_storage[b_pos])
+
+        # for ordinal in range(len(a_storage)):
+        #     b_index = np.array([0]*len(b_shape))
+        #     to_index(ordinal, b_shape, b_index)
+        #     b_ordinal = index_to_position(b_index, b_strides)
+
+        #     out_index = np.array([0]*len(out_shape))
+        #     to_index(ordinal, out_shape, out_index)
+        #     out_ordinal = index_to_position(out_index, out_strides)
+
+        #     out[out_ordinal] = fn(a_storage[ordinal], b_storage[b_ordinal])
 
     return _zip
 
@@ -340,10 +366,41 @@ def tensor_reduce(
         a_strides: Strides,
         reduce_dim: int,
     ) -> None:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError('Need to implement for Task 2.3')
+        # cal out_shape and out_strides
+        reduce_size = a_shape[reduce_dim]
+
+        # reduce
+        all_coords = get_indices(shape=a_shape, reduce_dim=reduce_dim)
+        for coord in all_coords:
+            # start reducing
+            start = a_storage[index_to_position(coord, a_strides)]
+            reduce_func = reduce(fn, start=start)
+            ## to be reduced coords
+            reduce_coords = [list(coord[:reduce_dim]) + [j] + list(coord[reduce_dim+1:]) for j in range(1, reduce_size)]
+
+            out[index_to_position(coord, out_strides)] = reduce_func(map(lambda x: a_storage[index_to_position(x, a_strides)], reduce_coords))
 
     return _reduce
 
+def get_indices(shape: tuple, reduce_dim: int) :
+    """Returns all combination of indices except for reduce_dim"""
+    all_coords = []
+
+    def _backtrack(cur_coord, i):
+        if i >= len(shape):
+            all_coords.append(tuple(cur_coord))
+        elif i == reduce_dim:
+            cur_coord.append(0)
+            _backtrack(cur_coord, i+1)
+            cur_coord.pop()
+        else:
+            for j in range(shape[i]):
+                cur_coord.append(j)
+                _backtrack(cur_coord, i+1)
+                cur_coord.pop()
+    
+    _backtrack([], 0)
+
+    return all_coords
 
 SimpleBackend = TensorBackend(SimpleOps)

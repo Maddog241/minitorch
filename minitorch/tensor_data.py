@@ -88,9 +88,10 @@ def broadcast_index(
     """
 
     r_big_shape = list(big_shape[::-1])
-    r_shape = list(shape[::-1]) + [1] * (len(big_shape) - len(shape))
+    r_shape = list(shape[::-1])
     r_big_index = list(big_index[::-1])
     r_out_index = [0] * len(shape)
+    assert shape.shape == out_index.shape
 
     for i in range(len(shape)):
         if r_big_shape[i] == r_shape[i]:
@@ -99,6 +100,8 @@ def broadcast_index(
             r_out_index[i] = 0
         else:
             raise IndexingError(f"Shape mismatch '{big_shape}' and '{shape}'")
+    # import pdb
+    # pdb.set_trace()
     
     for i in range(len(out_index)):
         out_index[i] = r_out_index[-i-1]
