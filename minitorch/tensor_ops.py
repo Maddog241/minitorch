@@ -266,12 +266,15 @@ def tensor_map(
         in_shape: Shape,
         in_strides: Strides,
     ) -> None:
-        # simple version
-        for ordinal in range(len(in_storage)):
-            in_index = np.array([0]*len(in_shape))
-            to_index(ordinal, in_shape, in_index)
-            in_ordinal = index_to_position(in_index, in_strides)
-            out[ordinal] = fn(in_storage[in_ordinal])
+        all_coords = get_indices(out_shape, -1)
+        for coord in all_coords:
+            in_index = np.zeros(in_shape.shape, dtype=np.int32)
+            broadcast_index(coord, out_shape, in_shape, in_index)
+
+            pos = index_to_position(in_index, in_strides)
+            ordinal = index_to_position(coord, out_strides)
+
+            out[ordinal] = fn(in_storage[pos])
 
     return _map
 
@@ -326,17 +329,6 @@ def tensor_zip(
             ordinal = index_to_position(coord, out_strides)
 
             out[ordinal] = fn(a_storage[a_pos], b_storage[b_pos])
-
-        # for ordinal in range(len(a_storage)):
-        #     b_index = np.array([0]*len(b_shape))
-        #     to_index(ordinal, b_shape, b_index)
-        #     b_ordinal = index_to_position(b_index, b_strides)
-
-        #     out_index = np.array([0]*len(out_shape))
-        #     to_index(ordinal, out_shape, out_index)
-        #     out_ordinal = index_to_position(out_index, out_strides)
-
-        #     out[out_ordinal] = fn(a_storage[ordinal], b_storage[b_ordinal])
 
     return _zip
 

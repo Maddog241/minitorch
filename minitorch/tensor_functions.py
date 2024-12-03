@@ -111,18 +111,18 @@ class Mul(Function):
 class Sigmoid(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
-        ctx.save_for_backward(t1)
-        return SimpleBackend.sigmoid_map(t1)
+        sig = SimpleBackend.sigmoid_map(t1)
+        ctx.save_for_backward(sig)
+        return sig
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-        t1 = ctx.saved_tensors
+        (sig,) = ctx.saved_tensors
         mul = SimpleBackend.mul_zip
-        sigmoid = SimpleBackend.sigmoid_map
         add = SimpleBackend.add_zip
         neg = SimpleBackend.neg_map
 
-        return mul(mul(sigmoid(t1), add(1, neg(sigmoid(t1)))), grad_output)
+        return mul(add(sig, neg(mul(sig, sig))), grad_output)
 
 
 
@@ -134,7 +134,7 @@ class ReLU(Function):
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-        t1 = ctx.saved_tensors
+        (t1,) = ctx.saved_tensors
         return SimpleBackend.relu_back_zip(t1, grad_output)
 
 
@@ -146,7 +146,7 @@ class Log(Function):
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-        t1 = ctx.saved_tensors
+        (t1,) = ctx.saved_tensors
         return SimpleBackend.log_back_zip(t1, grad_output)
 
 
@@ -158,7 +158,7 @@ class Exp(Function):
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-        t1 = ctx.saved_tensors
+        (t1,) = ctx.saved_tensors
         return SimpleBackend.mul_zip(SimpleBackend.exp_map(t1), grad_output)
 
 
@@ -212,15 +212,19 @@ class IsClose(Function):
 class Permute(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, order: Tensor) -> Tensor:
+        assert len(order.shape) == 1
+        order = order.to_numpy().astype(np.int32).tolist()
         ctx.save_for_backward(order)
-        return a.permute(order)
+        a._tensor = a._tensor.permute(*order)
+        return a
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
-        order = ctx.saved_tensors
+        (order,) = ctx.saved_tensors
         inverse_order = sorted(enumerate(order), key=lambda x: x[1])
         inverse_order = tuple(map(lambda x: x[0], inverse_order))
-        return grad_output.permute(inverse_order)
+        grad_output._tensor = grad_output._tensor.permute(*inverse_order)
+        return grad_output, 0.0
 
 
 class View(Function):
