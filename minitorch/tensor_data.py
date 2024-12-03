@@ -86,9 +86,22 @@ def broadcast_index(
     Returns:
         None
     """
-    # TODO: Implement for Task 2.2.
-    raise NotImplementedError('Need to implement for Task 2.2')
 
+    r_big_shape = list(big_shape[::-1])
+    r_shape = list(shape[::-1]) + [1] * (len(big_shape) - len(shape))
+    r_big_index = list(big_index[::-1])
+    r_out_index = [0] * len(shape)
+
+    for i in range(len(shape)):
+        if r_big_shape[i] == r_shape[i]:
+            r_out_index[i] = r_big_index[i]
+        elif r_shape[i] == 1:
+            r_out_index[i] = 0
+        else:
+            raise IndexingError(f"Shape mismatch '{big_shape}' and '{shape}'")
+    
+    for i in range(len(out_index)):
+        out_index[i] = r_out_index[-i-1]
 
 def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
     """
@@ -104,8 +117,27 @@ def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
     Raises:
         IndexingError : if cannot broadcast
     """
-    # TODO: Implement for Task 2.2.
-    raise NotImplementedError('Need to implement for Task 2.2')
+
+    # ensure len(shape1) >= len(shape2)
+    shape1, shape2 = (shape1, shape2) if len(shape1) >= len(shape2) else (shape2, shape1)
+    # process in reverse order (from right to left)
+    l_shape1 = list(shape1[::-1])
+    l_shape2 = list(shape2[::-1])
+    # padding the shorter shape with 1
+    if len(l_shape2) < len(l_shape1):
+        l_shape2 += [1]*(len(l_shape1) - len(l_shape2))
+    # start broadcasting
+    for i in range(len(l_shape1)):
+        # same shape, skipping
+        if l_shape1[i] == l_shape2[i]:
+            pass
+        # containing 1, broadcast
+        elif l_shape1[i] == 1 or l_shape2[i] == 1:
+            l_shape1[i] = max(l_shape1[i], l_shape2[i])
+            l_shape2[i] = max(l_shape1[i], l_shape2[i])
+        else:
+            raise IndexingError(f"Shape mismatch '{shape1}' and '{shape2}'")
+    return tuple(l_shape1[::-1])
 
 
 def strides_from_shape(shape: UserShape) -> UserStrides:
